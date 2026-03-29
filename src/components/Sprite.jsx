@@ -24,7 +24,7 @@ export function Sprite({ avenger, name, status, task, position, statusBadge }) {
   const animStyle = () => {
     if (status === 'working') return { transform: `scale(${1 + frame * 0.015})` };
     if (status === 'gym')     return { transform: `translateY(${-frame * 2}px)` };
-    if (status === 'sleep')   return { opacity: 0.7 + frame * 0.075 };
+    if (status === 'sleep')   return { opacity: 0.65 + frame * 0.1 };
     return {};
   };
 
@@ -66,6 +66,7 @@ export function Sprite({ avenger, name, status, task, position, statusBadge }) {
         background: '#1c2128',
         padding: 2,
         boxShadow: `0 0 8px ${borderColor}55`,
+        transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
       }}>
         <canvas
           ref={canvasRef}
@@ -80,15 +81,17 @@ export function Sprite({ avenger, name, status, task, position, statusBadge }) {
         marginTop: 4, fontSize: 9, fontWeight: 'bold',
         color: borderColor, textAlign: 'center',
         textShadow: '0 1px 2px #000', letterSpacing: 0.5,
+        transition: 'color 0.4s ease',
       }}>{name.split(' ')[0].toUpperCase()}</div>
 
       {/* Task label */}
       {task && (
         <div style={{
-          marginTop: 2, fontSize: 8, background: 'rgba(0,0,0,.8)',
+          marginTop: 2, fontSize: 8, background: 'rgba(0,0,0,.85)',
           color: '#f39c12', padding: '2px 5px', borderRadius: 4,
           maxWidth: 80, textAlign: 'center', wordBreak: 'break-word',
-        }}>{task.substring(0, 12)}…</div>
+          border: '1px solid #f39c1244',
+        }}>{task.substring(0, 14)}…</div>
       )}
     </div>
   );

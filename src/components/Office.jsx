@@ -3,8 +3,8 @@ import { Sprite } from './Sprite';
 import { socketService } from '../services/socketService';
 
 // ─── Layout constants ──────────────────────────────────────────────────────
-const W = 1100; // virtual canvas width
-const H = 580;  // virtual canvas height
+const W = 1100;
+const H = 580;
 
 const COMPUTERS = {
   iron_man:        { x: 60,  y: 140 },
@@ -15,9 +15,9 @@ const COMPUTERS = {
 };
 
 const GYM_SPOTS = [
-  { x: 850, y: 130 },
-  { x: 930, y: 130 },
-  { x: 1010, y: 130 },
+  { x: 855, y: 115 },
+  { x: 930, y: 115 },
+  { x: 1005, y: 115 },
 ];
 
 const BEDS = {
@@ -31,8 +31,8 @@ const BEDS = {
 const AVENGER_META = {
   iron_man:        { name: 'Iron Man',        color: '#e74c3c' },
   black_widow:     { name: 'Black Widow',     color: '#9b59b6' },
-  thor:            { name: 'Thor',             color: '#f39c12' },
-  hawkeye:         { name: 'Hawkeye',          color: '#27ae60' },
+  thor:            { name: 'Thor',            color: '#f39c12' },
+  hawkeye:         { name: 'Hawkeye',         color: '#27ae60' },
   captain_america: { name: 'Captain America', color: '#3498db' },
 };
 
@@ -45,6 +45,10 @@ const INIT = Object.fromEntries(
   ])
 );
 
+function ts() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 // ─── SVG office background ─────────────────────────────────────────────────
 function OfficeBg() {
   return (
@@ -56,7 +60,6 @@ function OfficeBg() {
     >
       {/* Wall */}
       <rect width={W} height={200} fill="#5c4a32" />
-      {/* Wall stripe */}
       <rect y={180} width={W} height={20} fill="#4a3828" />
       {/* Floor */}
       <rect y={200} width={W} height={H - 200} fill="#c8a86e" />
@@ -84,17 +87,14 @@ function OfficeBg() {
       <rect x={10} y={90} width={750} height={20} fill="#3a2f20" rx={3} />
       <text x={20} y={85} fill="#f39c12" fontSize={10} fontFamily="monospace" fontWeight="bold">💻 WORKSTATIONS</text>
 
-      {/* Desks */}
+      {/* Desks + monitors */}
       {[60, 220, 380, 540].map((x, i) => (
         <g key={i}>
           <rect x={x - 5} y={110} width={75} height={30} fill="#8B5E3C" stroke="#5a3a1a" strokeWidth={2} rx={3} />
-          {/* Monitor */}
           <rect x={x + 5} y={92} width={55} height={38} fill="#1a1a2e" stroke="#333" strokeWidth={2} rx={2} />
           <rect x={x + 8} y={95} width={49} height={32} fill="#0d1117" rx={1} />
-          {/* Screen glow */}
           <rect x={x + 9} y={96} width={47} height={30} fill="#003366" opacity={0.6} rx={1} />
           <text x={x + 33} y={115} fill="#00ff88" fontSize={8} textAnchor="middle" fontFamily="monospace">{'>'}_</text>
-          {/* Monitor stand */}
           <rect x={x + 27} y={128} width={7} height={8} fill="#555" />
           <rect x={x + 20} y={135} width={21} height={4} fill="#444" />
         </g>
@@ -113,21 +113,21 @@ function OfficeBg() {
       {/* Treadmills */}
       {[840, 920, 1000].map((x, i) => (
         <g key={i}>
-          <rect x={x} y={90} width={65} height={35} fill="#2c0a0a" stroke="#c0392b" strokeWidth={2} rx={4} />
-          <rect x={x + 5} y={95} width={55} height={20} fill="#1a0505" rx={2} />
-          <text x={x + 32} y={110} fill="#ff6666" fontSize={8} textAnchor="middle" fontFamily="monospace">🏃</text>
-          <rect x={x + 10} y={118} width={45} height={4} fill="#c0392b" rx={2} />
+          <rect x={x} y={80} width={65} height={35} fill="#2c0a0a" stroke="#c0392b" strokeWidth={2} rx={4} />
+          <rect x={x + 5} y={85} width={55} height={20} fill="#1a0505" rx={2} />
+          <text x={x + 32} y={99} fill="#ff6666" fontSize={8} textAnchor="middle" fontFamily="monospace">🏃</text>
+          <rect x={x + 10} y={108} width={45} height={4} fill="#c0392b" rx={2} />
         </g>
       ))}
 
-      {/* Weights rack */}
+      {/* Weight rack */}
       <rect x={835} y={140} width={240} height={80} fill="#1f0000" stroke="#922b21" strokeWidth={2} rx={4} />
-      <text x={955} y={160} fill="#e74c3c" fontSize={8} textAnchor="middle" fontFamily="monospace">WEIGHT RACK</text>
+      <text x={955} y={158} fill="#e74c3c" fontSize={8} textAnchor="middle" fontFamily="monospace">WEIGHT RACK</text>
       {[855, 895, 935, 975, 1015, 1055].map((x, i) => (
         <g key={i}>
-          <circle cx={x} cy={185} r={14} fill="#333" stroke="#c0392b" strokeWidth={2} />
-          <circle cx={x} cy={185} r={8} fill="#222" />
-          <text x={x} y={189} fill="#999" fontSize={8} textAnchor="middle">{(i + 1) * 10}</text>
+          <circle cx={x} cy={183} r={14} fill="#333" stroke="#c0392b" strokeWidth={2} />
+          <circle cx={x} cy={183} r={8} fill="#222" />
+          <text x={x} y={187} fill="#999" fontSize={8} textAnchor="middle">{(i + 1) * 10}</text>
         </g>
       ))}
 
@@ -135,26 +135,19 @@ function OfficeBg() {
       <rect x={10} y={390} width={700} height={170} fill="#0d1b2a" stroke="#2c3e50" strokeWidth={3} rx={6} />
       <text x={25} y={408} fill="#3498db" fontSize={10} fontFamily="monospace" fontWeight="bold">🛏️ BEDROOM</text>
 
-      {/* 5 Beds */}
       {[30, 160, 290, 420, 550].map((x, i) => (
         <g key={i}>
-          {/* Bed frame */}
           <rect x={x} y={415} width={110} height={70} fill="#1a2a3a" stroke="#34495e" strokeWidth={2} rx={4} />
-          {/* Pillow */}
           <rect x={x + 5} y={420} width={30} height={20} fill="#ecf0f1" stroke="#bdc3c7" strokeWidth={1} rx={3} />
-          {/* Blanket */}
           <rect x={x + 5} y={443} width={100} height={38} fill="#2e86de" stroke="#1a6ab5" strokeWidth={1} rx={2} />
-          {/* Blanket pattern */}
           <rect x={x + 5} y={443} width={100} height={8} fill="#1a6ab5" rx={2} />
-          {/* Headboard */}
           <rect x={x} y={410} width={110} height={10} fill="#2c3e50" stroke="#34495e" strokeWidth={1} rx={2} />
         </g>
       ))}
 
       {/* ── DECORATIONS ── */}
-      {/* Window top-right */}
+      {/* Window */}
       <rect x={W - 140} y={20} width={120} height={100} fill="#87ceeb" stroke="#5c4a32" strokeWidth={4} rx={3} />
-      <rect x={W - 140} y={20} width={120} height={100} fill="none" stroke="#5c4a32" strokeWidth={2} />
       <line x1={W - 80} y1={20} x2={W - 80} y2={120} stroke="#5c4a32" strokeWidth={2} />
       <line x1={W - 140} y1={70} x2={W - 20} y2={70} stroke="#5c4a32" strokeWidth={2} />
       <rect x={W - 135} y={25} width={50} height={42} fill="#b0d9f0" opacity={0.6} />
@@ -164,7 +157,6 @@ function OfficeBg() {
       <rect x={W - 55} y={170} width={20} height={30} fill="#8B4513" />
       <ellipse cx={W - 45} cy={165} rx={22} ry={18} fill="#27ae60" />
       <ellipse cx={W - 55} cy={158} rx={15} ry={12} fill="#2ecc71" />
-
       <rect x={790} y={230} width={16} height={24} fill="#8B4513" />
       <ellipse cx={798} cy={226} rx={18} ry={15} fill="#27ae60" />
 
@@ -173,7 +165,7 @@ function OfficeBg() {
       <text x={W - 150} y={260} fill="#f39c12" fontSize={16} textAnchor="middle">🏆</text>
       <text x={W - 150} y={280} fill="#f39c12" fontSize={10} textAnchor="middle">🥇</text>
 
-      {/* Rug in center */}
+      {/* Rug */}
       <ellipse cx={450} cy={340} rx={200} ry={60} fill="#8B4513" opacity={0.3} stroke="#6B3410" strokeWidth={2} />
       <ellipse cx={450} cy={340} rx={170} ry={48} fill="none" stroke="#a0522d" strokeWidth={2} opacity={0.4} />
     </svg>
@@ -188,10 +180,6 @@ export function Office() {
     { t: ts(), msg: '(SYSTEM) Dashboard initialized — connecting to bot…', color: '#3498db' },
   ]);
 
-  function ts() {
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  }
-
   const addLog = useCallback((msg, color = '#e0e0e0') => {
     setLog(prev => [{ t: ts(), msg, color }, ...prev.slice(0, 99)]);
   }, []);
@@ -201,6 +189,7 @@ export function Office() {
     addLog(`(SYSTEM) Connecting to ${botUrl}…`, '#3498db');
     socketService.connect(botUrl);
 
+    // Poll connection state every second
     const poll = setInterval(() => setBotOnline(socketService.isConnected()), 1000);
 
     socketService.on('connect', () => {
@@ -212,28 +201,30 @@ export function Office() {
       addLog('(SYSTEM) ❌ Bot disconnected — retrying…', '#e74c3c');
     });
 
+    // job_started → move to computer, show task
     socketService.on('job_started', ({ avenger, task }) => {
       const meta = AVENGER_META[avenger];
       setAvengers(prev => ({
         ...prev,
         [avenger]: { status: 'working', task, position: COMPUTERS[avenger] || prev[avenger].position },
       }));
-      addLog(`[${meta?.name || avenger}] 🔴 Started: ${task?.substring(0, 40)}`, meta?.color);
+      addLog(`[${meta?.name || avenger}] 🔴 Started: ${task?.substring(0, 45)}`, meta?.color);
     });
 
+    // job_completed → gym → (1h later) sleep
     socketService.on('job_completed', ({ avenger }) => {
       const meta = AVENGER_META[avenger];
       const spot = GYM_SPOTS[Math.floor(Math.random() * GYM_SPOTS.length)];
       setAvengers(prev => ({ ...prev, [avenger]: { status: 'gym', task: null, position: spot } }));
-      addLog(`[${meta?.name || avenger}] ✅ Done → Gym`, meta?.color);
+      addLog(`[${meta?.name || avenger}] ✅ Done → Gym 💪`, meta?.color);
 
       setTimeout(() => {
         setAvengers(prev => ({ ...prev, [avenger]: { status: 'sleep', task: null, position: BEDS[avenger] } }));
-        addLog(`[${meta?.name || avenger}] 😴 Sleeping`, '#7f8c8d');
+        addLog(`[${meta?.name || avenger}] 😴 Going to sleep`, '#7f8c8d');
       }, 3_600_000);
     });
 
-    // Legacy events
+    // Legacy / extra events
     socketService.on('avenger_update', ({ id, status, task }) => {
       const posMap = { working: COMPUTERS[id], gym: GYM_SPOTS[0], sleep: BEDS[id], idle: BEDS[id] };
       setAvengers(prev => ({
@@ -246,6 +237,12 @@ export function Office() {
     });
     socketService.on('status', ({ message }) => {
       addLog(`(BOT) ${message}`, '#9b59b6');
+    });
+    socketService.on('connect_bridge', ({ message }) => {
+      addLog(`(BRIDGE) ✅ ${message}`, '#2ecc71');
+    });
+    socketService.on('disconnect_bridge', ({ message }) => {
+      addLog(`(BRIDGE) ⚠️ ${message}`, '#e67e22');
     });
 
     return () => {
@@ -267,13 +264,18 @@ export function Office() {
       {/* ── Header ── */}
       <div style={{ background: '#000', borderBottom: '3px solid #f39c12', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 'bold', color: '#f39c12', textShadow: '0 0 10px #f39c1255' }}>🎮 Avengers Pokemon Office</div>
+          <div style={{ fontSize: 20, fontWeight: 'bold', color: '#f39c12', textShadow: '0 0 10px #f39c1255' }}>
+            🛡️ Avengers Pokemon Office
+          </div>
           <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>Gen 3 Style · Real-time Dashboard</div>
         </div>
         <div style={{
-          padding: '6px 18px', borderRadius: 20, border: `2px solid ${botOnline ? '#2ecc71' : '#e74c3c'}`,
+          padding: '6px 18px', borderRadius: 20,
+          border: `2px solid ${botOnline ? '#2ecc71' : '#e74c3c'}`,
           background: botOnline ? 'rgba(46,204,113,.15)' : 'rgba(231,76,60,.15)',
-          color: botOnline ? '#2ecc71' : '#e74c3c', fontWeight: 'bold', fontSize: 13,
+          color: botOnline ? '#2ecc71' : '#e74c3c',
+          fontWeight: 'bold', fontSize: 13,
+          transition: 'all 0.5s ease',
         }}>
           {botOnline ? '🟢 Bot Online' : '🔴 Bot Offline'}
         </div>
@@ -292,7 +294,7 @@ export function Office() {
           </span>
         ))}
         <span style={{ marginLeft: 'auto', color: '#444', fontSize: 10 }}>
-          📡 {(process.env.REACT_APP_SOCKET_URL || 'localhost').replace(/https?:\/\//, '')}
+          📡 {(process.env.REACT_APP_SOCKET_URL || window.location.hostname)}
         </span>
       </div>
 
@@ -300,7 +302,6 @@ export function Office() {
       <div style={{ position: 'relative', flexShrink: 0, height: 580, overflow: 'hidden', borderBottom: '2px solid #21262d' }}>
         <OfficeBg />
 
-        {/* Sprites */}
         {Object.entries(avengers).map(([id, state]) => (
           <Sprite
             key={id}
@@ -313,9 +314,6 @@ export function Office() {
             statusLabel={STATUS_LABEL[state.status] || 'Idle'}
           />
         ))}
-
-        {/* Area labels overlay */}
-        <div style={{ position: 'absolute', bottom: 140, left: 350, color: '#f39c12', fontSize: 10, opacity: 0.7 }}>🚶 OFFICE FLOOR</div>
       </div>
 
       {/* ── API chips ── */}
@@ -356,7 +354,7 @@ export function Office() {
       <div style={{ borderTop: '1px solid #21262d', padding: '6px 16px', fontSize: 10, color: '#444', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
         <span>🤖 @CaptainAmerica215Bot</span>
         <span>🎮 Pokemon Gen 3 Office</span>
-        <span>📡 Real-time Socket.IO</span>
+        <span>📡 Real-time Socket.IO Bridge</span>
         <span>🦾 5 Avengers</span>
       </div>
     </div>
