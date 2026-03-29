@@ -1,161 +1,198 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AvengerSprite, SPRITE_DATA } from './components/PixelArtSprites';
+import { socketService } from './services/socketService';
 import './App.css';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || window.location.origin;
+const BOT_URL = process.env.REACT_APP_SOCKET_URL || window.location.origin;
 
 const AVENGERS = [
-  { id: 'iron_man',    name: 'Iron Man',     emoji: '🦾', color: '#c0392b', role: 'Campaign Manager'  },
-  { id: 'black_widow', name: 'Black Widow',  emoji: '🕷️', color: '#8e44ad', role: 'Creative Director' },
-  { id: 'thor',        name: 'Thor',         emoji: '⚡', color: '#2980b9', role: 'Video Producer'    },
-  { id: 'hawkeye',     name: 'Hawkeye',      emoji: '🎯', color: '#27ae60', role: 'Analytics Lead'    },
-  { id: 'cap',         name: 'Captain America', emoji: '🛡️', color: '#1abc9c', role: 'Commander'     },
+  { id: 'iron_man',        name: 'Iron Man',         role: 'Campaign Manager',  color: '#FF3300' },
+  { id: 'black_widow',     name: 'Black Widow',      role: 'Creative Director', color: '#222222' },
+  { id: 'thor',            name: 'Thor',              role: 'Video Producer',    color: '#FFAA00' },
+  { id: 'hawkeye',         name: 'Hawkeye',           role: 'Analytics Lead',    color: '#8B4513' },
+  { id: 'captain_america', name: 'Captain America',   role: 'Commander',         color: '#0066FF' },
 ];
 
-const STATUS_COLORS = {
-  idle:    '#555',
-  working: '#c0392b',
-  gym:     '#e67e22',
-  sleep:   '#2c3e50',
-};
+const STATUS_ICONS = { idle: '🟢', working: '🔴', gym: '💪', sleep: '😴' };
+const STATUS_LABELS = { idle: 'Idle', working: 'Working', gym: 'At Gym', sleep: 'Sleeping' };
 
-const STATUS_LABELS = {
-  idle:    '💤 Idle',
-  working: '🔴 Working',
-  gym:     '💪 Gym',
-  sleep:   '😴 Sleep',
-};
+const INITIAL_STATES = Object.fromEntries(
+  AVENGERS.map(a => [a.id, { status: 'idle', task: null }])
+);
 
 function AvengerCard({ avenger, status, task }) {
+  const spriteStatus = status === 'gym' ? 'idle' : status;
+
   return (
-    <div className="avenger-card" style={{ borderColor: avenger.color }}>
-      <div className="avenger-emoji">{avenger.emoji}</div>
+    <div className="avenger-card" style={{ '--border-color': avenger.color }}>
+      <div className="sprite-wrap">
+        <AvengerSprite avengerId={avenger.id} status={spriteStatus} />
+        <span className="status-icon">{STATUS_ICONS[status] || '🟢'}</span>
+      </div>
       <div className="avenger-name" style={{ color: avenger.color }}>{avenger.name}</div>
       <div className="avenger-role">{avenger.role}</div>
-      <div className="avenger-status" style={{ background: STATUS_COLORS[status] || STATUS_COLORS.idle }}>
-        {STATUS_LABELS[status] || STATUS_LABELS.idle}
+      <div className={`status-badge status-${status}`}>
+        {STATUS_LABELS[status] || 'Idle'}
       </div>
-      {task && <div className="avenger-task">📋 {task}</div>}
-    </div>
-  );
-}
-
-function LogEntry({ entry }) {
-  return (
-    <div className="log-entry">
-      <span className="log-time">{entry.time}</span>
-      <span className="log-avenger" style={{ color: entry.color }}>[{entry.avenger}]</span>
-      <span className="log-msg"> {entry.message}</span>
+      {task && <div className="task-label">📋 {task}</div>}
     </div>
   );
 }
 
 export default function App() {
   const [connected, setConnected] = useState(false);
-  const [avengerStates, setAvengerStates] = useState(() =>
-    Object.fromEntries(AVENGERS.map(a => [a.id, { status: 'idle', task: null }]))
-  );
+  const [states, setStates] = useState(INITIAL_STATES);
   const [logs, setLogs] = useState([
-    { time: new Date().toLocaleTimeString(), avenger: 'SYSTEM', color: '#3498db', message: 'Avengers Office Dashboard initialized' },
+    { t: now(), who: 'SYSTEM', color: '#3498db', msg: 'Dashboard initialized — connecting to bot...' },
   ]);
-  const socketRef = useRef(null);
 
-  const addLog = (avenger, message, color = '#e0e0e0') => {
-    setLogs(prev => [
-      { time: new Date().toLocaleTimeString(), avenger, color, message },
-      ...prev.slice(0, 99),
-    ]);
-  };
+  function now() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
 
-  useEffect(() => {
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      setConnected(true);
-      addLog('SYSTEM', 'Connected to bot via Socket.IO', '#2ecc71');
-    });
-
-    socket.on('disconnect', () => {
-      setConnected(false);
-      addLog('SYSTEM', 'Disconnected from bot', '#e74c3c');
-    });
-
-    socket.on('avenger_update', (data) => {
-      const { id, status, task } = data;
-      setAvengerStates(prev => ({ ...prev, [id]: { status, task } }));
-      const av = AVENGERS.find(a => a.id === id);
-      if (av) addLog(av.name, `→ ${STATUS_LABELS[status]}${task ? ': ' + task : ''}`, av.color);
-    });
-
-    socket.on('task_update', (data) => {
-      addLog(data.avenger || 'BOT', data.message, '#f39c12');
-    });
-
-    return () => socket.disconnect();
+  const log = useCallback((who, msg, color = '#bdc3c7') => {
+    setLogs(prev => [{ t: now(), who, color, msg }, ...prev.slice(0, 149)]);
   }, []);
 
-  const stats = {
-    working: Object.values(avengerStates).filter(s => s.status === 'working').length,
-    gym:     Object.values(avengerStates).filter(s => s.status === 'gym').length,
-    idle:    Object.values(avengerStates).filter(s => s.status === 'idle').length,
+  useEffect(() => {
+    socketService.connect(BOT_URL);
+
+    const checkConn = setInterval(() => {
+      setConnected(socketService.isConnected());
+    }, 1000);
+
+    socketService.on('connect', () => {
+      setConnected(true);
+      log('SYSTEM', `Socket connected (${BOT_URL})`, '#2ecc71');
+    });
+
+    socketService.on('disconnect', () => {
+      setConnected(false);
+      log('SYSTEM', 'Socket disconnected — retrying...', '#e74c3c');
+    });
+
+    // Bot events
+    socketService.on('job_started', ({ avenger, task }) => {
+      const av = AVENGERS.find(a => a.id === avenger);
+      setStates(prev => ({ ...prev, [avenger]: { status: 'working', task } }));
+      log(av?.name || avenger, `Started: ${task}`, av?.color || '#f39c12');
+    });
+
+    socketService.on('job_completed', ({ avenger, result }) => {
+      const av = AVENGERS.find(a => a.id === avenger);
+      setStates(prev => ({ ...prev, [avenger]: { status: 'gym', task: null } }));
+      log(av?.name || avenger, `✅ Done → heading to gym`, av?.color || '#2ecc71');
+
+      // Sleep after 1 hour
+      setTimeout(() => {
+        setStates(prev => ({ ...prev, [avenger]: { status: 'sleep', task: null } }));
+        log(av?.name || avenger, '😴 Going to sleep', '#7f8c8d');
+      }, 3_600_000);
+    });
+
+    // Legacy event names from existing bot
+    socketService.on('avenger_update', ({ id, status, task }) => {
+      const av = AVENGERS.find(a => a.id === id);
+      setStates(prev => ({ ...prev, [id]: { status, task: task || null } }));
+      log(av?.name || id, `→ ${STATUS_LABELS[status] || status}${task ? ': ' + task : ''}`, av?.color);
+    });
+
+    socketService.on('task_update', ({ avenger, message }) => {
+      log(avenger || 'BOT', message, '#f39c12');
+    });
+
+    socketService.on('status', ({ message }) => {
+      log('BOT', message, '#9b59b6');
+    });
+
+    return () => {
+      clearInterval(checkConn);
+      socketService.disconnect();
+    };
+  }, [log]);
+
+  const counts = {
+    working: Object.values(states).filter(s => s.status === 'working').length,
+    gym:     Object.values(states).filter(s => s.status === 'gym').length,
+    sleep:   Object.values(states).filter(s => s.status === 'sleep').length,
+    idle:    Object.values(states).filter(s => s.status === 'idle').length,
   };
 
   return (
     <div className="app">
+      {/* Header */}
       <header className="header">
-        <h1>🎮 Avengers Pokemon Office</h1>
-        <div className={`connection-badge ${connected ? 'online' : 'offline'}`}>
-          {connected ? '🟢 Bot Connected' : '🔴 Bot Offline'}
+        <div className="header-left">
+          <h1>🎮 Avengers Pokemon Office</h1>
+          <span className="subtitle">Gen 3 Style Dashboard</span>
+        </div>
+        <div className={`conn-badge ${connected ? 'online' : 'offline'}`}>
+          {connected ? '🟢 Bot Online' : '🔴 Bot Offline'}
         </div>
       </header>
 
-      <div className="stats-bar">
-        <div className="stat"><span className="stat-num" style={{color:'#c0392b'}}>{stats.working}</span> Working</div>
-        <div className="stat"><span className="stat-num" style={{color:'#e67e22'}}>{stats.gym}</span> At Gym</div>
-        <div className="stat"><span className="stat-num" style={{color:'#3498db'}}>{stats.idle}</span> Idle</div>
+      {/* Stats */}
+      <div className="stats-row">
+        <div className="stat-item"><span style={{color:'#e74c3c'}}>{counts.working}</span> Working</div>
+        <div className="stat-item"><span style={{color:'#e67e22'}}>{counts.gym}</span> At Gym</div>
+        <div className="stat-item"><span style={{color:'#3498db'}}>{counts.sleep}</span> Sleeping</div>
+        <div className="stat-item"><span style={{color:'#2ecc71'}}>{counts.idle}</span> Idle</div>
+        <div className="stat-item conn-url">📡 {BOT_URL.replace('https://', '').replace('http://', '')}</div>
       </div>
 
-      <div className="office-grid">
-        {AVENGERS.map(av => (
-          <AvengerCard
-            key={av.id}
-            avenger={av}
-            status={avengerStates[av.id]?.status}
-            task={avengerStates[av.id]?.task}
-          />
-        ))}
-      </div>
+      {/* Office Grid */}
+      <section className="office-section">
+        <h2 className="section-title">🏢 Office Floor</h2>
+        <div className="office-grid">
+          {AVENGERS.map(av => (
+            <AvengerCard
+              key={av.id}
+              avenger={av}
+              status={states[av.id]?.status || 'idle'}
+              task={states[av.id]?.task}
+            />
+          ))}
+        </div>
+      </section>
 
-      <div className="api-status">
-        <h3>🔌 API Integrations</h3>
+      {/* API Status */}
+      <section className="api-section">
+        <h2 className="section-title">🔌 Integrations</h2>
         <div className="api-grid">
           {[
-            { name: 'OpenAI GPT-4',   icon: '🧠', color: '#10a37f' },
-            { name: 'ElevenLabs',     icon: '🎙️', color: '#8e44ad' },
-            { name: 'Facebook Ads',   icon: '📱', color: '#1877f2' },
-            { name: 'Gemini Imagen',  icon: '🖼️', color: '#4285f4' },
-            { name: 'Runway Gen-3',   icon: '🎬', color: '#e74c3c' },
-            { name: 'Luma Dream',     icon: '✨', color: '#9b59b6' },
-            { name: 'Telegram Bot',   icon: '🤖', color: '#0088cc' },
-            { name: 'Socket.IO',      icon: '📡', color: connected ? '#2ecc71' : '#e74c3c' },
+            { name: 'OpenAI GPT-4',  icon: '🧠', color: '#10a37f', active: true },
+            { name: 'ElevenLabs',    icon: '🎙️', color: '#8e44ad', active: true },
+            { name: 'Facebook Ads',  icon: '📘', color: '#1877f2', active: true },
+            { name: 'Gemini Imagen', icon: '🖼️', color: '#4285f4', active: true },
+            { name: 'Runway Gen-3',  icon: '🎬', color: '#e74c3c', active: true },
+            { name: 'Luma Dream',    icon: '✨', color: '#9b59b6', active: true },
+            { name: 'Telegram Bot',  icon: '🤖', color: '#0088cc', active: true },
+            { name: 'Socket.IO',     icon: '📡', color: connected ? '#2ecc71' : '#e74c3c', active: connected },
           ].map(api => (
-            <div key={api.name} className="api-badge" style={{ borderColor: api.color }}>
+            <div key={api.name} className="api-chip" style={{ borderColor: api.color, opacity: api.active ? 1 : 0.5 }}>
               {api.icon} <span style={{ color: api.color }}>{api.name}</span>
+              <span className="api-dot" style={{ background: api.active ? api.color : '#555' }} />
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="log-panel">
-        <h3>📜 Activity Log</h3>
-        <div className="log-list">
-          {logs.map((entry, i) => <LogEntry key={i} entry={entry} />)}
+      {/* Log */}
+      <section className="log-section">
+        <h2 className="section-title">📜 Activity Log <span className="log-count">{logs.length} entries</span></h2>
+        <div className="log-scroll">
+          {logs.map((e, i) => (
+            <div key={i} className="log-row">
+              <span className="log-t">{e.t}</span>
+              <span className="log-who" style={{ color: e.color }}>[{e.who}]</span>
+              <span className="log-msg"> {e.msg}</span>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
 
       <footer className="footer">
-        🤖 @CaptainAmerica215Bot · 📡 Real-time via Socket.IO · 🎮 Pokemon Gen 3 Style
+        🤖 @CaptainAmerica215Bot · 🎮 Pokemon Gen 3 · 📡 Real-time Socket.IO · 🦾 5 Avengers
       </footer>
     </div>
   );
